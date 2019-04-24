@@ -18,7 +18,7 @@ contract Credit {
     }
 
     mapping(bytes32 => CreditData[]) public credits; // key = id
-    mapping(address => RecordData[]) records; // key = requirer
+    mapping(address => RecordData[]) records; // key = requirer address
     bytes32[] public idArray;
     address[] public requirerArray;
 
@@ -29,6 +29,7 @@ contract Credit {
         idArray.push(id);
     }
 
+    // 问题： 数据量太大怎么办? 先不考虑
     function getCreditDataById(string memory id_string) public view returns( address[] memory, 
                                                                 //bytes32[] memory, 
                                                                 bytes32[] memory, 
