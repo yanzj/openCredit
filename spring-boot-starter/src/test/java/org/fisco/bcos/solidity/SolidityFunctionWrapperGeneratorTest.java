@@ -24,7 +24,6 @@ public class SolidityFunctionWrapperGeneratorTest  {
     protected String tempDirPath =  new File("src/test/java/").getAbsolutePath();
     protected String packageName =  "org.fisco.bcos.solidity";
 
-
     @Test
     public void generateClassFromABIForHelloWorld() throws Exception {
 

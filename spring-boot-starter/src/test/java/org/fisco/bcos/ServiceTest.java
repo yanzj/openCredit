@@ -1,7 +1,6 @@
 package org.fisco.bcos;
 
 import org.fisco.bcos.channel.client.Service;
-import org.fisco.bcos.web3j.protocol.Web3j;
 import org.fisco.bcos.web3j.protocol.channel.ChannelEthereumService;
 import org.junit.Test;
 import org.junit.runner.RunWith;

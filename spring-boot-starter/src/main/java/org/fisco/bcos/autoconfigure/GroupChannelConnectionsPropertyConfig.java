@@ -20,15 +20,9 @@ public class GroupChannelConnectionsPropertyConfig {
 
     List<ChannelConnections> allChannelConnections = new ArrayList<>();
 
-    @Autowired
-    Service service;
-
     @Bean
     public GroupChannelConnectionsConfig getGroupChannelConnections() {
         GroupChannelConnectionsConfig groupChannelConnectionsConfig = new GroupChannelConnectionsConfig();
-//        ChannelConnections channelConnections = new ChannelConnections();
-//        channelConnections.init();
-//        allChannelConnections.add(channelConnections);
         groupChannelConnectionsConfig.setAllChannelConnections(allChannelConnections);
         return groupChannelConnectionsConfig;
     }

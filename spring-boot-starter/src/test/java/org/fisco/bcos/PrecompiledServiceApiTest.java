@@ -20,6 +20,8 @@ public class PrecompiledServiceApiTest {
 
     private Credentials credentials;
 
+
+
     @Before
     public void setUp() throws Exception {
         credentials = GenCredential.create("b83261efa42895c38c6c2364ca878f43e77f3cddbc922bf57d0d48070f79feb6");

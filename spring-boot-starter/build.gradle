@@ -12,8 +12,6 @@ apply plugin: 'eclipse'
 
 description = 'Spring Boot Starter'
 
-group = 'com.example'
-version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -44,5 +42,55 @@ configurations {
 	}
 	compileOnly {
 		extendsFrom annotationProcessor
+	}
+}
+
+sourceSets {
+	main {
+		java {
+			srcDirs = ["src/main/java"]
+		}
+		resources {
+			srcDirs = ["src/main/resources"]
+		}
+	}
+	test {
+		java {
+			srcDirs = ["src/test/java"]
+		}
+		resources {
+			srcDirs = ["src/test/resources"]
+		}
+	}
+}
+
+clean {
+	delete 'dist'
+	delete 'build'
+}
+
+bootJar {
+	destinationDir file('dist/apps')
+	archiveName project.name + '.jar'
+	exclude '**/*.xml'
+	exclude '**/*.properties'
+
+	doLast {
+		copy {
+			from file('src/main/resources/')
+			into 'dist/conf_template'
+		}
+		copy {
+			from file('files/')
+			into 'dist/files'
+		}
+		copy {
+			from configurations.runtime
+			into 'dist/lib'
+		}
+		copy {
+			from file('.').listFiles().findAll{File f -> (f.name.endsWith('.bat') || f.name.endsWith('.sh') || f.name.endsWith('.env'))}
+			into 'dist'
+		}
 	}
 }

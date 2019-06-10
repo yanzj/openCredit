@@ -50,3 +50,4 @@ src/test/java/org/fisco/bcos/temp/*
 .settings/
 bin/
 
+dist/
