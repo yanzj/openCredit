@@ -35,7 +35,7 @@ public class CreditController {
     public @ResponseBody BigInteger addCredit(@RequestParam("id") String id,
                                          @RequestParam("data") String data) throws Exception {
 //        Uint256 result = new Uint256();
-        TransactionReceipt result = credit.addCreditData(id, data).send();
+        TransactionReceipt result = credit.addCreditData(id, data).sendAsync().get();
         List<Credit.AddCreditDataSuccessEventResponse> reponses = credit.getAddCreditDataSuccessEvents(result);
         return reponses.get(0).id;
     }
@@ -51,7 +51,7 @@ public class CreditController {
     public @ResponseBody List<CreditData> getCredits(@RequestParam("id") String id
                                          ) throws Exception {
 //        Uint256 result = new Uint256();
-        Tuple5<List<BigInteger>, List<String>, List<byte[]>, List<BigInteger>, List<BigInteger>> result = credit.getCreditDetialDataByPeopleId(id).send();
+        Tuple5<List<BigInteger>, List<String>, List<byte[]>, List<BigInteger>, List<BigInteger>> result = credit.getCreditDetialDataByPeopleId(id).sendAsync().get();
         ArrayList<CreditData> credits = new ArrayList<>();
         for (int i = 0; i < result.getValue1().size(); i++) {
             CreditData creditData = new CreditData(result.getValue1().get(i),

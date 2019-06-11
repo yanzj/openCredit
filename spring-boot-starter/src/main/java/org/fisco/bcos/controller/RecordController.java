@@ -25,7 +25,7 @@ public class RecordController {
     /**
      * Add record data in block chain
      * @param creditDataId the credit data id
-     * @param owner the owner of the credit data
+     * @param uploader the owner of the credit data
      * @return
      * @throws Exception
      */
@@ -53,7 +53,7 @@ public class RecordController {
                          @RequestParam("recordId") BigInteger recordId,
                          @RequestParam("creditDataId") BigInteger creditDataId
     ) throws Exception {
-        return record.checkRecordExist(applicant, uploader, recordId, creditDataId).send();
+        return record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get();
     }
 
     /**
@@ -68,13 +68,21 @@ public class RecordController {
             @RequestParam("recordId") BigInteger recordId,
             @RequestParam("isSend") Boolean isSend
     ) throws Exception {
-        return record.sendRecordData(recordId, isSend).send().isStatusOK();
+        TransactionReceipt receipt = record.sendRecordData(recordId, isSend).sendAsync().get();
+        if (!receipt.isStatusOK()) {
+            System.out.println(receipt.getLogs().toString());
+            throw new Exception("/ifSend Status not OK: " + receipt.getLogs().toString());
+        }
+        List<Record.SendRecordDataSuccessEventResponse> responses = record.getSendRecordDataSuccessEvents(receipt);
+        if (responses.isEmpty())
+            return false;
+        return responses.get(0).yn;
     }
 
     @PostMapping(value = "/get")
     public @ResponseBody
     RecordData getRecordDataById(@RequestParam("recordId") BigInteger recordId) throws Exception {
-        Tuple8<String, String, BigInteger, BigInteger, BigInteger, Boolean, BigInteger, Boolean> tupleResult = record.getRecordDataById(recordId).send();
+        Tuple8<String, String, BigInteger, BigInteger, BigInteger, Boolean, BigInteger, Boolean> tupleResult = record.getRecordDataById(recordId).sendAsync().get();
         return new RecordData(tupleResult);
     }
 
@@ -82,6 +90,14 @@ public class RecordController {
     public @ResponseBody
     boolean scoreRecordData( @RequestParam("recordId") BigInteger recordId,
                              @RequestParam("score") BigInteger score) throws Exception {
-        return record.scoreRecordData(recordId, score).send().isStatusOK();
+        TransactionReceipt receipt = record.scoreRecordData(recordId, score).sendAsync().get();
+        if (!receipt.isStatusOK()) {
+            System.out.println(receipt.getLogs().toString());
+            throw new Exception("/score Status not OK: " + receipt.getLogs().toString());
+        }
+        List<Record.SendRecordDataSuccessEventResponse> responses = record.getSendRecordDataSuccessEvents(receipt);
+        if (responses.isEmpty())
+            return false;
+        return responses.get(0).yn;
     }
 }
