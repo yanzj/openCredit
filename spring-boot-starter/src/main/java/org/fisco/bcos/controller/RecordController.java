@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigInteger;
+import java.util.List;
 
 @RestController
 @RequestMapping(value = "/record")
@@ -30,20 +31,29 @@ public class RecordController {
      */
     @PostMapping(value = "/add")
     public @ResponseBody
-    String addRecord(@RequestParam("creditDataId") BigInteger creditDataId,
-                     @RequestParam("owner") String owner) throws Exception {
-        TransactionReceipt result = record.addRecordData(creditDataId, owner).send();
-        return result.toString();
+    RecordData addRecord(@RequestParam("creditDataId") BigInteger creditDataId,
+                     @RequestParam("uploader") String uploader) throws Exception {
+        TransactionReceipt result = record.addRecordData(creditDataId, uploader).sendAsync().get();
+        if (!result.isStatusOK()) {
+            System.out.println(result.getLogs().toString());
+            throw new Exception("Status not OK: " + result.getLogs().toString());
+        }
+        List<Record.AddRecordSuccessEventResponse> reponses = record.getAddRecordSuccessEvents(result);
+//        while (reponses.size() == 0)
+//            reponses = record.getAddRecordSuccessEvents(result);
+        if (reponses.isEmpty())
+            return new RecordData();
+        return new RecordData(reponses.get(0));
     }
 
     @PostMapping(value = "/check")
     public @ResponseBody
     boolean checkRecord (@RequestParam("applicant") String applicant,
-                         @RequestParam("owner") String owner,
+                         @RequestParam("uploader") String uploader,
                          @RequestParam("recordId") BigInteger recordId,
                          @RequestParam("creditDataId") BigInteger creditDataId
     ) throws Exception {
-        return record.checkRecordExist(applicant, owner, recordId, creditDataId).send();
+        return record.checkRecordExist(applicant, uploader, recordId, creditDataId).send();
     }
 
     /**

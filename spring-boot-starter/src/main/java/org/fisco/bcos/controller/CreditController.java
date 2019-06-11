@@ -6,6 +6,7 @@ import org.fisco.bcos.utils.SolidityTools;
 import org.fisco.bcos.web3j.protocol.Web3j;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.fisco.bcos.web3j.tuples.generated.Tuple5;
+import org.fisco.bcos.web3j.utils.Numeric;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,11 +32,12 @@ public class CreditController {
      * @throws Exception
      */
     @PostMapping(value = "/add")
-    public @ResponseBody String addCredit(@RequestParam("id") String id,
+    public @ResponseBody BigInteger addCredit(@RequestParam("id") String id,
                                          @RequestParam("data") String data) throws Exception {
 //        Uint256 result = new Uint256();
         TransactionReceipt result = credit.addCreditData(id, data).send();
-        return result.toString();
+        List<Credit.AddCreditDataSuccessEventResponse> reponses = credit.getAddCreditDataSuccessEvents(result);
+        return reponses.get(0).id;
     }
 
 
@@ -49,14 +51,15 @@ public class CreditController {
     public @ResponseBody List<CreditData> getCredits(@RequestParam("id") String id
                                          ) throws Exception {
 //        Uint256 result = new Uint256();
-        Tuple5<List<BigInteger>, List<String>, List<byte[]>, List<byte[]>, List<BigInteger>> result = credit.getCreditDetialDataByPeopleId(id).send();
+        Tuple5<List<BigInteger>, List<String>, List<byte[]>, List<BigInteger>, List<BigInteger>> result = credit.getCreditDetialDataByPeopleId(id).send();
         ArrayList<CreditData> credits = new ArrayList<>();
         for (int i = 0; i < result.getValue1().size(); i++) {
-            credits.add(new CreditData(result.getValue1().get(i),
-                                       result.getValue2().get(i),
-                    SolidityTools.bytesToString(result.getValue3().get(i)),
-                    SolidityTools.bytesToString(result.getValue4().get(i)),
-                                       String.valueOf(result.getValue5().get(i))));
+            CreditData creditData = new CreditData(result.getValue1().get(i),
+                    result.getValue2().get(i),
+                    Numeric.toHexString(result.getValue3().get(i)),
+                    result.getValue5().get(i),
+            String.valueOf(result.getValue4().get(0)));
+            credits.add(creditData);
         }
         return credits;
     }

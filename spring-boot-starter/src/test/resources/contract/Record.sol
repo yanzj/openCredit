@@ -7,7 +7,7 @@ contract Record {
 
     struct RecordData {
         address applicant; // the organize want the data
-        address owner;     // the organize upload the data
+        address uploader;  // the organize upload the data
         uint id;           // index
         uint creditDataId; // the id of credit data
         uint time;
@@ -16,13 +16,20 @@ contract Record {
         bool isScored;     // whether the uploader has scored
     }
 
+    event addRecordSuccess(address _applicant,
+                           address _uploader,
+                           uint _id,
+                           uint _creditDataId,
+                           uint _time);
+
     // Add Record Data
-    function addRecordData(uint creditDataId, address owner) public
-    returns (address, address, uint, uint, uint) {
-        require(owner != msg.sender, "The onwner of the data could not be the applicant!");
+    function addRecordData(uint creditDataId, address uploader)
+    public
+    {
+        require(uploader != msg.sender, "The onwner of the data could not be the applicant!");
         id = id + 1;
         RecordData memory record = RecordData(msg.sender,
-                                              owner,
+                                              uploader,
                                               id,
                                               creditDataId,
                                               now,
@@ -31,18 +38,18 @@ contract Record {
                                               false);
         records[msg.sender].push(record);
         applicantArray.push(msg.sender);
-        return (record.applicant, record.owner, record.id, record.creditDataId, record.time);
+        emit addRecordSuccess (record.applicant, record.uploader, record.id, record.creditDataId, record.time);
     }
 
     // Check if the record is stored.
     function checkRecordExist(address applicant,
-                                address owner,
+                                address uploader,
                                 uint recordId,
                                 uint creditDataId) public view
     returns (bool) {
         for (uint j = 0; j < records[applicant].length; j++) {
             if (records[applicant][j].applicant == applicant &&
-                records[applicant][j].owner == owner &&
+                records[applicant][j].uploader == uploader &&
                 records[applicant][j].id == recordId &&
                 records[applicant][j].creditDataId == creditDataId) {
                 return true;
@@ -59,7 +66,7 @@ contract Record {
                 if (records[applicantArray[i]][j].id == recordId) {
                     RecordData memory tmp = records[applicantArray[i]][j];
                     return (tmp.applicant,
-                            tmp.owner,
+                            tmp.uploader,
                             tmp.id,
                             tmp.creditDataId,
                             tmp.time,
@@ -73,26 +80,34 @@ contract Record {
         // return a zero record to imply can't find the record
     }
 
+    event sendRecordDataSuccess(bool yn);
     // 发送原始数据之后，将数据标为已发送
     // 需要对 CreditData 进行查找, 时间与空间的如何选择？ 只能遍历
-    function sendRecordData(uint recordId, bool yn) public
-    returns(bool){
+    function sendRecordData(uint recordId, bool yn)
+    public
+    {
         for (uint i = 0; i < applicantArray.length; i ++) {
             for (uint j = 0; j < records[applicantArray[i]].length; j++) {
                 if (records[applicantArray[i]][j].id == recordId) {
-                    require(records[applicantArray[i]][j].owner == msg.sender, "Only the owner of the data can choose whether to send.");
-                    require(records[applicantArray[i]][j].isSent == false, "This data has been sent.");
+                    require(
+                    records[applicantArray[i]][j].uploader == msg.sender,
+                    "Only the owner of the data can choose whether to send.");
+                    require(
+                    records[applicantArray[i]][j].isSent == false,
+                    "This data has been sent.");
                     records[applicantArray[i]][j].isSent = yn;
-                    return true;
+                    emit sendRecordDataSuccess(true);
                 }
             }
         }
-        return false;
+        emit sendRecordDataSuccess(false);
     }
 
+    event scoreRecordDataSuccess(bool yn);
     // 机构评分 RecordData
-    function scoreRecordData(uint recordId, uint8 score) public
-    returns(bool) {
+    function scoreRecordData(uint recordId, uint8 score)
+    public
+    {
         for (uint i = 0; i < applicantArray.length; i ++) {
             for (uint j = 0; j < records[applicantArray[i]].length; j++) {
                 if (records[applicantArray[i]][j].id == recordId) {
@@ -101,10 +116,10 @@ contract Record {
                     require(records[applicantArray[i]][j].isScored == false, "This data has been recorded.");
                     records[applicantArray[i]][j].score = score;
                     records[applicantArray[i]][j].isScored = true;
-                    return true;
+                    emit scoreRecordDataSuccess(true);
                 }
             }
         }
-        return false;
+        emit scoreRecordDataSuccess(false);
     }
 }

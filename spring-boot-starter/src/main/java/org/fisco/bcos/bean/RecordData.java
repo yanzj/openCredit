@@ -1,5 +1,6 @@
 package org.fisco.bcos.bean;
 
+import org.fisco.bcos.solidity.Record;
 import org.fisco.bcos.web3j.tuples.generated.Tuple8;
 
 import java.math.BigInteger;
@@ -7,7 +8,7 @@ import java.math.BigInteger;
 public class RecordData {
 
     String applicant; // the organize want the data
-    String owner;     // the organize upload the data
+    String uploader;     // the organize upload the data
     BigInteger id;           // index
     BigInteger creditDataId; // the id of credit data
     BigInteger time;
@@ -15,9 +16,12 @@ public class RecordData {
     BigInteger score;       // the score of this record
     Boolean isScored;     // whether the uploader has scored
 
+    public RecordData() {
+    }
+
     public RecordData(String applicant, String owner, BigInteger id, BigInteger creditDataId, BigInteger time, Boolean isSent, BigInteger score, Boolean isScored) {
         this.applicant = applicant;
-        this.owner = owner;
+        this.uploader = owner;
         this.id = id;
         this.creditDataId = creditDataId;
         this.time = time;
@@ -26,15 +30,26 @@ public class RecordData {
         this.isScored = isScored;
     }
 
-    public RecordData(Tuple8<String, String, BigInteger, BigInteger, BigInteger, Boolean, BigInteger, Boolean> tupleResult ) {
-        this.applicant = tupleResult.getValue1();
-        this.owner = tupleResult.getValue2();
-        this.id = tupleResult.getValue3();
-        this.creditDataId = tupleResult.getValue4();
-        this.time = tupleResult.getValue5();
-        this.isSent = tupleResult.getValue6();
-        this.score = tupleResult.getValue7();
-        this.isScored = tupleResult.getValue8();
+    public RecordData(Record.AddRecordSuccessEventResponse reponse) {
+        this.applicant = reponse._applicant;
+        this.uploader = reponse._uploader;
+        this.id = reponse._id;
+        this.creditDataId = reponse._creditDataId;
+        this.time = reponse._time;
+        this.isSent = false;
+        this.score = new BigInteger("0");
+        this.isScored = false;
+    }
+
+    public RecordData(Tuple8<String, String, BigInteger, BigInteger, BigInteger, Boolean, BigInteger, Boolean> result)  {
+        new RecordData(result.getValue1(),
+                result.getValue2(),
+                result.getValue3(),
+                result.getValue4(),
+                result.getValue5(),
+                result.getValue6(),
+                result.getValue7(),
+                result.getValue8());
     }
 
     public String getApplicant() {
@@ -45,12 +60,12 @@ public class RecordData {
         this.applicant = applicant;
     }
 
-    public String getOwner() {
-        return owner;
+    public String getUploader() {
+        return uploader;
     }
 
-    public void setOwner(String owner) {
-        this.owner = owner;
+    public void setUploader(String uploader) {
+        this.uploader = uploader;
     }
 
     public BigInteger getId() {
@@ -105,7 +120,7 @@ public class RecordData {
     public String toString() {
         return "RecordData{" +
                 "applicant='" + applicant + '\'' +
-                ", owner='" + owner + '\'' +
+                ", uploader='" + uploader + '\'' +
                 ", id=" + id +
                 ", creditDataId=" + creditDataId +
                 ", time=" + time +

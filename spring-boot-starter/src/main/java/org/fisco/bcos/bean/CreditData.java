@@ -7,15 +7,15 @@ public class CreditData {
 
     BigInteger id;
     String uploader;
-    String peopleId;
+    BigInteger type;
     String data;
     String time;
 
-    public CreditData(BigInteger id, String uploader, String peopleId, String data, String time) {
+    public CreditData(BigInteger id, String uploader, String data, BigInteger type, String time) {
         this.id = id;
         this.uploader = uploader;
-        this.peopleId = peopleId;
         this.data = data;
+        this.type = type;
         this.time = time;
     }
 
@@ -36,14 +36,6 @@ public class CreditData {
         this.uploader = uploader;
     }
 
-    public String getPeopleId() {
-        return peopleId;
-    }
-
-    public void setPeopleId(String peopleId) {
-        this.peopleId = peopleId;
-    }
-
     public String getData() {
         return data;
     }
@@ -60,12 +52,20 @@ public class CreditData {
         this.time = time;
     }
 
+    public BigInteger getType() {
+        return type;
+    }
+
+    public void setType(BigInteger type) {
+        this.type = type;
+    }
+
     @Override
     public String toString() {
         return "CreditData{" +
                 "id=" + id +
                 ", uploader='" + uploader + '\'' +
-                ", peopleId='" + peopleId + '\'' +
+                ", type=" + type +
                 ", data='" + data + '\'' +
                 ", time='" + time + '\'' +
                 '}';

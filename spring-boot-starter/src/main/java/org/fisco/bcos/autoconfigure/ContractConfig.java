@@ -27,7 +27,10 @@ public class ContractConfig {
 
     @Bean
     public Credit getCredit () throws Exception {
-        return Credit.deploy(web3j, credentials, new StaticGasProvider(gasPrice, gasLimit)).send();
+        Credit credit = Credit.deploy(web3j, credentials, new StaticGasProvider(gasPrice, gasLimit)).send();
+        System.out.println(credit.getContractAddress());
+
+        return credit;
     }
 
     @Bean
