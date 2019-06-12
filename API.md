@@ -74,7 +74,7 @@
     ```
 
 * `{baseurl}/record/ifSend`
-  - Description: 
+  - Description: The uploader decide if send the original data
   - Method: `POST`
   - FORM-DATA:
     ```
