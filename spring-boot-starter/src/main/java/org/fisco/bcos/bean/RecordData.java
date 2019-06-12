@@ -42,14 +42,14 @@ public class RecordData {
     }
 
     public RecordData(Tuple8<String, String, BigInteger, BigInteger, BigInteger, Boolean, BigInteger, Boolean> result)  {
-        new RecordData(result.getValue1(),
-                result.getValue2(),
-                result.getValue3(),
-                result.getValue4(),
-                result.getValue5(),
-                result.getValue6(),
-                result.getValue7(),
-                result.getValue8());
+        this.applicant = result.getValue1();
+        this.uploader = result.getValue2();
+        this.id = result.getValue3();
+        this.creditDataId = result.getValue4();
+        this.time = result.getValue5();
+        this.isSent = result.getValue6();
+        this.score = result.getValue7();
+        this.isScored = result.getValue8();
     }
 
     public String getApplicant() {

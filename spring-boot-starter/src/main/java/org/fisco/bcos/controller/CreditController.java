@@ -1,5 +1,7 @@
 package org.fisco.bcos.controller;
 
+import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.fisco.bcos.bean.CreditData;
 import org.fisco.bcos.solidity.Credit;
 import org.fisco.bcos.utils.SolidityTools;
@@ -14,6 +16,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
+@CrossOrigin(origins = "http://localhost:8080")
 @RestController
 @RequestMapping(value = "/credit")
 public class CreditController {
@@ -32,12 +36,15 @@ public class CreditController {
      * @throws Exception
      */
     @PostMapping(value = "/add")
-    public @ResponseBody BigInteger addCredit(@RequestParam("id") String id,
-                                         @RequestParam("data") String data) throws Exception {
-//        Uint256 result = new Uint256();
+    public @ResponseBody String addCredit(@RequestParam("id") String id,
+                                          @RequestParam("data") String data) throws Exception {
+        log.info("/credit/add");
         TransactionReceipt result = credit.addCreditData(id, data).sendAsync().get();
         List<Credit.AddCreditDataSuccessEventResponse> reponses = credit.getAddCreditDataSuccessEvents(result);
-        return reponses.get(0).id;
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("id", reponses.get(0).id);
+        log.info("return: "  + jsonObject.toJSONString());
+        return jsonObject.toJSONString();
     }
 
 

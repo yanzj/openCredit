@@ -10,6 +10,7 @@ apply plugin: 'eclipse'
 //apply plugin: 'war'
 //apply plugin: 'application'
 
+
 description = 'Spring Boot Starter'
 
 sourceCompatibility = 1.8
@@ -78,7 +79,7 @@ bootJar {
 	doLast {
 		copy {
 			from file('src/main/resources/')
-			into 'dist/conf_template'
+			into 'dist/conf'
 		}
 		copy {
 			from file('files/')

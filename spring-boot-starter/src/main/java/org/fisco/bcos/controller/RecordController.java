@@ -1,6 +1,7 @@
 package org.fisco.bcos.controller;
 
 
+import com.alibaba.fastjson.JSONObject;
 import org.fisco.bcos.bean.RecordData;
 import org.fisco.bcos.solidity.Record;
 import org.fisco.bcos.web3j.protocol.Web3j;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigInteger;
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:8080")
 @RestController
 @RequestMapping(value = "/record")
 public class RecordController {
@@ -46,14 +48,25 @@ public class RecordController {
         return new RecordData(reponses.get(0));
     }
 
+    /**
+     * Checks if the record is in the block chain
+     * @param applicant
+     * @param uploader
+     * @param recordId
+     * @param creditDataId
+     * @return A json string
+     * @throws Exception
+     */
     @PostMapping(value = "/check")
     public @ResponseBody
-    boolean checkRecord (@RequestParam("applicant") String applicant,
+    String checkRecord (@RequestParam("applicant") String applicant,
                          @RequestParam("uploader") String uploader,
                          @RequestParam("recordId") BigInteger recordId,
                          @RequestParam("creditDataId") BigInteger creditDataId
     ) throws Exception {
-        return record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get();
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("isSuccess", record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get());
+        return jsonObject.toJSONString();
     }
 
     /**
@@ -64,7 +77,7 @@ public class RecordController {
      * @throws Exception
      */
     @PostMapping(value = "/ifSend")
-    public  @ResponseBody boolean ifSend(
+    public  @ResponseBody String ifSend(
             @RequestParam("recordId") BigInteger recordId,
             @RequestParam("isSend") Boolean isSend
     ) throws Exception {
@@ -74,21 +87,30 @@ public class RecordController {
             throw new Exception("/ifSend Status not OK: " + receipt.getLogs().toString());
         }
         List<Record.SendRecordDataSuccessEventResponse> responses = record.getSendRecordDataSuccessEvents(receipt);
-        if (responses.isEmpty())
-            return false;
-        return responses.get(0).yn;
+
+        JSONObject jsonObject = new JSONObject();
+        if (responses.isEmpty()) {
+            throw new Exception("response empty!");
+        } else {
+            jsonObject.put("isSuccess", responses.get(0).yn);
+        }
+        return jsonObject.toJSONString();
+
     }
 
     @PostMapping(value = "/get")
     public @ResponseBody
     RecordData getRecordDataById(@RequestParam("recordId") BigInteger recordId) throws Exception {
         Tuple8<String, String, BigInteger, BigInteger, BigInteger, Boolean, BigInteger, Boolean> tupleResult = record.getRecordDataById(recordId).sendAsync().get();
+        RecordData recordData = new RecordData(tupleResult);
+        if (recordData.getId().intValue() == 0)
+            throw new Exception("NULL");
         return new RecordData(tupleResult);
     }
 
     @PostMapping(value = "/score")
     public @ResponseBody
-    boolean scoreRecordData( @RequestParam("recordId") BigInteger recordId,
+    String scoreRecordData( @RequestParam("recordId") BigInteger recordId,
                              @RequestParam("score") BigInteger score) throws Exception {
         TransactionReceipt receipt = record.scoreRecordData(recordId, score).sendAsync().get();
         if (!receipt.isStatusOK()) {
@@ -96,8 +118,12 @@ public class RecordController {
             throw new Exception("/score Status not OK: " + receipt.getLogs().toString());
         }
         List<Record.SendRecordDataSuccessEventResponse> responses = record.getSendRecordDataSuccessEvents(receipt);
-        if (responses.isEmpty())
-            return false;
-        return responses.get(0).yn;
+        JSONObject jsonObject = new JSONObject();
+        if (responses.isEmpty()) {
+            throw new Exception("response empty!");
+        } else {
+            jsonObject.put("isSuccess", responses.get(0).yn);
+        }
+        return jsonObject.toJSONString();
     }
 }
