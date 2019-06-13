@@ -6,15 +6,14 @@ import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
-import org.fisco.bcos.bean.CreditData;
 import org.fisco.bcos.bean.RecordData;
 import org.fisco.bcos.domain.OriginCredit;
 import org.fisco.bcos.domain.RequiredRecord;
 import org.fisco.bcos.service.CreditRepository;
+import org.fisco.bcos.service.RequireRecordRepository;
 import org.fisco.bcos.service.RequiredRecordRepository;
 import org.fisco.bcos.solidity.Record;
 import org.fisco.bcos.web3j.protocol.Web3j;
@@ -44,7 +43,10 @@ public class RecordController {
     CreditRepository creditRepository;
 
     @Autowired
-    RequiredRecordRepository requiredRecordRepository;
+    RequiredRecordRepository requiredRecordRepository; // 对方
+
+    @Autowired
+    RequireRecordRepository requireRecordRepository; // 本地
 
     /**
      * Add record data in block chain and require the original data
@@ -68,6 +70,15 @@ public class RecordController {
             throw new Exception("No success! Response is empty!");
 
         RecordData recordData = new RecordData(reponses.get(0));
+
+        RequiredRecord requiredRecord = new RequiredRecord();
+        requiredRecord.setRecordId(recordData.getId());
+        requiredRecord.setApplicant(recordData.getApplicant());
+        requiredRecord.setUploader(uploader);
+        requiredRecord.setCreditDataId(creditDataId);
+        requiredRecord.setTime(recordData.getTime());
+
+        requireRecordRepository.save(requiredRecord);
 
         // Todo: Get the URL
         requireOriginData(recordData, "url");
@@ -128,7 +139,7 @@ public class RecordController {
 
         try {
             RequiredRecord requiredRecord = new RequiredRecord();
-            requiredRecord.setRecordid(recordId);
+            requiredRecord.setRecordId(recordId);
             requiredRecord.setApplicant(applicant);
             requiredRecord.setUploader(uploader);
             requiredRecord.setCreditDataId(creditDataId);

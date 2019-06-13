@@ -2,8 +2,6 @@ package org.fisco.bcos.domain;
 
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import java.math.BigInteger;
 
@@ -11,7 +9,7 @@ import java.math.BigInteger;
 public class RequiredRecord {
 
     @Id
-    private BigInteger Recordid;  // index
+    private BigInteger recordId;  // index
 
     private String applicant;    // the organize want the data
     private String uploader;     // the organize upload the data
@@ -27,15 +25,52 @@ public class RequiredRecord {
 
     private BigInteger score;       // the score of this record
 
-    private String URL; // the applicant URL
+    private BigInteger creditId;
 
+    private String dataOrigin;
 
-    public BigInteger getRecordid() {
-        return Recordid;
+    private String dataHash;
+
+    private BigInteger type;
+
+    public BigInteger getCreditId() {
+        return creditId;
     }
 
-    public void setRecordid(BigInteger recordid) {
-        Recordid = recordid;
+    public void setCreditId(BigInteger creditId) {
+        this.creditId = creditId;
+    }
+
+    public String getDataOrigin() {
+        return dataOrigin;
+    }
+
+    public void setDataOrigin(String dataOrigin) {
+        this.dataOrigin = dataOrigin;
+    }
+
+    public String getDataHash() {
+        return dataHash;
+    }
+
+    public void setDataHash(String dataHash) {
+        this.dataHash = dataHash;
+    }
+
+    public BigInteger getType() {
+        return type;
+    }
+
+    public void setType(BigInteger type) {
+        this.type = type;
+    }
+
+    public BigInteger getRecordId() {
+        return recordId;
+    }
+
+    public void setRecordId(BigInteger recordId) {
+        this.recordId = recordId;
     }
 
     public String getApplicant() {

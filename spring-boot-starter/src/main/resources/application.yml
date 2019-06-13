@@ -4,11 +4,12 @@ group-channel-connections-config:
   - group-id: 1  #group ID
     connections-str:
                     - 47.107.32.140:20202  # node listen_ip:channel_listen_port
-#                    - 106.14.15.186:20203
+#                    - 106.14.15.186:20202
 
 channel-service:
   group-id: 1 # The specified group to which the SDK connects
-  org-id: AgentZQH # agency name
+#  org-id: AgentZWM # agency name
+  org-id: AgentZQH
 
 spring:
   application:

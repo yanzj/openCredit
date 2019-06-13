@@ -4,8 +4,10 @@ import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.fisco.bcos.bean.CreditData;
 import org.fisco.bcos.domain.OriginCredit;
+import org.fisco.bcos.domain.RequiredRecord;
 import org.fisco.bcos.domain.SavedCredit;
 import org.fisco.bcos.service.CreditRepository;
+import org.fisco.bcos.service.RequireRecordRepository;
 import org.fisco.bcos.service.SavedCreditRepository;
 import org.fisco.bcos.solidity.Credit;
 import org.fisco.bcos.utils.SolidityTools;
@@ -38,6 +40,9 @@ public class CreditController {
 
     @Autowired
     SavedCreditRepository savedCreditRepository;
+
+    @Autowired
+    RequireRecordRepository requireRecordRepository;
 
     /**
      * Add a credit to the block chain
@@ -109,6 +114,12 @@ public class CreditController {
             sv.setDataHash(dataHash);
             sv.setType(type);
             savedCreditRepository.save(sv);
+            RequiredRecord rr = requireRecordRepository.findByCreditDataId(sv.getCreditId());
+            rr.setSent(true);
+            rr.setDataOrigin(sv.getDataOrigin());
+            rr.setDataHash(sv.getDataHash());
+            rr.setType(type);
+
             isSuccess = true;
         } catch (Exception e) {
             jsonObject.put("error", e.toString());
@@ -116,5 +127,26 @@ public class CreditController {
         jsonObject.put("isSuccess", isSuccess);
 
         return  jsonObject.toJSONString();
+    }
+
+    @PostMapping(value = "/scoreList")
+    public Iterable<RequiredRecord> scoreList() {
+
+        JSONObject jsonObject = new JSONObject();
+        boolean isSuccess = false;
+        Iterable<RequiredRecord> list = requireRecordRepository.findByIsSent(true);
+//        try {
+//
+//            list =
+//
+//
+//
+//            isSuccess = true;
+//        } catch (Exception e) {
+//            jsonObject.put("error", e.toString());
+//        }
+//        jsonObject.put("isSuccess", isSuccess);
+
+        return  list;
     }
 }
