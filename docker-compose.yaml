@@ -6,7 +6,7 @@ services:
    restart: always
    ports:
     - 28081:80
-    - 443:443
+    # - 443:443
    volumes:
     - ./nginx/conf.d:/etc/nginx/conf.d
   #  depends_on:
