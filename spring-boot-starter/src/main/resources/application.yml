@@ -15,4 +15,4 @@ spring:
     name: openCredit
 
 server:
-  port: 8081
+  port: 28080

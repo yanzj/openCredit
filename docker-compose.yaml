@@ -5,12 +5,12 @@ services:
    image: nginx:1.13
    restart: always
    ports:
-    - 80:80
+    - 28081:80
     - 443:443
    volumes:
     - ./nginx/conf.d:/etc/nginx/conf.d
-   depends_on:
-    - app
+  #  depends_on:
+  #   - app
  
   mysql:
    container_name: opencredit-mysql
@@ -20,19 +20,23 @@ services:
       - MYSQL_DATABASE=spring_app_db
       - MYSQL_USER=app_user
       - MYSQL_PASSWORD=test123
-   expose:
-    - "3306"
+  #  expose:
+  #   - "3306"
+   ports:
+    - 23306:3306
    restart: always
   
-  app:
-    container_name: opencredit-app
-    restart: always
-    build: ./spring-boot-starter
-    volumes:
-      - ./spring-boot-starter:/app
-    command:
-      ["java", "-cp", "conf/:apps/*:lib/*", "-jar", "/app/dist/apps/openCredit.jar"]
-    expose:
-      - "8080"
-    depends_on:
-      - mysql
+  # app:
+  #   container_name: opencredit-app
+  #   restart: always
+  #   build: ./spring-boot-starter
+  #   volumes:
+  #     - ./spring-boot-starter:/app
+  #   command:
+  #     ["java", "-cp", "conf/:apps/*:lib/*", "-jar", "/app/dist/apps/openCredit.jar"]
+  #   # expose:
+  #   #   - "8080"
+  #   ports:
+  #     - 8080:8080
+  #   depends_on:
+  #     - mysql

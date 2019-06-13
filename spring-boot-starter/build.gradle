@@ -81,7 +81,7 @@ bootJar {
 	destinationDir file('dist/apps')
 	archiveName project.name + '.jar'
 	exclude '**/*.xml'
-	exclude '**/*.properties'
+//	exclude '**/*.properties'
 
 	doLast {
 		copy {
