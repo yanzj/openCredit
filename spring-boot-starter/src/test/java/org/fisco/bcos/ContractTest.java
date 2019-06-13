@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import lombok.extern.java.Log;
 import org.fisco.bcos.bean.CreditData;
@@ -42,8 +43,7 @@ public class ContractTest {
     private static BigInteger gasPrice = new BigInteger("300000000");
     private static BigInteger gasLimit = new BigInteger("300000000");
     private Credentials credentials;
-
-
+    private Credentials credentials2;
 
     @Autowired
     Web3j web3j;
@@ -51,7 +51,8 @@ public class ContractTest {
     @Before
     public void setUp() throws Exception {
         credentials = GenCredential.create("b83261efa42895c38c6c2364ca878f43e77f3cddbc922bf57d0d48070f79feb6");
-        if (credentials == null) {
+        credentials2 = GenCredential.create("b83261efa42895c38c6c2364ca878f43e77f3cddbc922bf57d0d48070f79feb7");
+        if (credentials == null || credentials2 == null) {
             throw new Exception("create Credentials failed");
         }
     }
@@ -65,13 +66,13 @@ public class ContractTest {
     public void deployAndCallHelloWorld() throws Exception {
         //deploy contract
         System.out.println("Start hello world");
-        HelloWorld helloWorld = HelloWorld.deploy(web3j, credentials, new StaticGasProvider(gasPrice, gasLimit)).send();
+        HelloWorld helloWorld = HelloWorld.deploy(web3j, credentials, new StaticGasProvider(gasPrice, gasLimit)).sendAsync().get(60000, TimeUnit.MILLISECONDS);
         if (helloWorld != null) {
             System.out.println("HelloWorld address is: " + helloWorld.getContractAddress());
             //call set function
-            helloWorld.set("Hello, World!").send();
+            helloWorld.set("Hello, World!").sendAsync().get(60000, TimeUnit.MILLISECONDS);
             //call get function
-            String result = helloWorld.get().send();
+            String result = helloWorld.get().sendAsync().get(60000, TimeUnit.MILLISECONDS);
             System.out.println(result);
             assertTrue( "Hello, World!".equals(result));
         }

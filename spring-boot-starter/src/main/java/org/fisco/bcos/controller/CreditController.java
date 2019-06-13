@@ -3,8 +3,13 @@ package org.fisco.bcos.controller;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.fisco.bcos.bean.CreditData;
+import org.fisco.bcos.domain.OriginCredit;
+import org.fisco.bcos.domain.SavedCredit;
+import org.fisco.bcos.service.CreditRepository;
+import org.fisco.bcos.service.SavedCreditRepository;
 import org.fisco.bcos.solidity.Credit;
 import org.fisco.bcos.utils.SolidityTools;
+import org.fisco.bcos.web3j.crypto.Hash;
 import org.fisco.bcos.web3j.protocol.Web3j;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.fisco.bcos.web3j.tuples.generated.Tuple5;
@@ -28,6 +33,12 @@ public class CreditController {
     @Autowired
     Credit credit;
 
+    @Autowired
+    CreditRepository creditRepository;
+
+    @Autowired
+    SavedCreditRepository savedCreditRepository;
+
     /**
      * Add a credit to the block chain
      * @param id people id
@@ -37,12 +48,24 @@ public class CreditController {
      */
     @PostMapping(value = "/add")
     public @ResponseBody String addCredit(@RequestParam("id") String id,
-                                          @RequestParam("data") String data) throws Exception {
+                                          @RequestParam("data") String data,
+                                          @RequestParam("type") BigInteger type) throws Exception {
         log.info("/credit/add");
         TransactionReceipt result = credit.addCreditData(id, data).sendAsync().get();
         List<Credit.AddCreditDataSuccessEventResponse> reponses = credit.getAddCreditDataSuccessEvents(result);
+
+        // Construct return
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id", reponses.get(0).id);
+
+        OriginCredit originCredit = new OriginCredit();
+        originCredit.setCreditId(reponses.get(0).id);
+        originCredit.setDataOrigin(data);
+        originCredit.setDataHash(Hash.sha3String(data));
+        originCredit.setType(type);
+
+        creditRepository.save(originCredit);
+
         log.info("return: "  + jsonObject.toJSONString());
         return jsonObject.toJSONString();
     }
@@ -69,5 +92,29 @@ public class CreditController {
             credits.add(creditData);
         }
         return credits;
+    }
+
+    @PostMapping(value = "/send")
+    public String send(@RequestParam("id") BigInteger id,
+                       @RequestParam("dataOrigin") String dataOrigin,
+                       @RequestParam("dataHash") String dataHash,
+                       @RequestParam("type") BigInteger type) {
+
+        JSONObject jsonObject = new JSONObject();
+        boolean isSuccess = false;
+        try {
+            SavedCredit sv = new SavedCredit();
+            sv.setCreditId(id);
+            sv.setDataOrigin(dataOrigin);
+            sv.setDataHash(dataHash);
+            sv.setType(type);
+            savedCreditRepository.save(sv);
+            isSuccess = true;
+        } catch (Exception e) {
+            jsonObject.put("error", e.toString());
+        }
+        jsonObject.put("isSuccess", isSuccess);
+
+        return  jsonObject.toJSONString();
     }
 }

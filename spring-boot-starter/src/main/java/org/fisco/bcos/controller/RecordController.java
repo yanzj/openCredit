@@ -2,7 +2,20 @@ package org.fisco.bcos.controller;
 
 
 import com.alibaba.fastjson.JSONObject;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicNameValuePair;
+import org.fisco.bcos.bean.CreditData;
 import org.fisco.bcos.bean.RecordData;
+import org.fisco.bcos.domain.OriginCredit;
+import org.fisco.bcos.domain.RequiredRecord;
+import org.fisco.bcos.service.CreditRepository;
+import org.fisco.bcos.service.RequiredRecordRepository;
 import org.fisco.bcos.solidity.Record;
 import org.fisco.bcos.web3j.protocol.Web3j;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -10,7 +23,10 @@ import org.fisco.bcos.web3j.tuples.generated.Tuple8;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:8080")
@@ -24,8 +40,14 @@ public class RecordController {
     @Autowired
     Record record;
 
+    @Autowired
+    CreditRepository creditRepository;
+
+    @Autowired
+    RequiredRecordRepository requiredRecordRepository;
+
     /**
-     * Add record data in block chain
+     * Add record data in block chain and require the original data
      * @param creditDataId the credit data id
      * @param uploader the owner of the credit data
      * @return
@@ -34,18 +56,93 @@ public class RecordController {
     @PostMapping(value = "/add")
     public @ResponseBody
     RecordData addRecord(@RequestParam("creditDataId") BigInteger creditDataId,
-                     @RequestParam("uploader") String uploader) throws Exception {
+                         @RequestParam("uploader") String uploader) throws Exception {
         TransactionReceipt result = record.addRecordData(creditDataId, uploader).sendAsync().get();
         if (!result.isStatusOK()) {
             System.out.println(result.getLogs().toString());
             throw new Exception("Status not OK: " + result.getLogs().toString());
         }
         List<Record.AddRecordSuccessEventResponse> reponses = record.getAddRecordSuccessEvents(result);
-//        while (reponses.size() == 0)
-//            reponses = record.getAddRecordSuccessEvents(result);
+
         if (reponses.isEmpty())
-            return new RecordData();
-        return new RecordData(reponses.get(0));
+            throw new Exception("No success! Response is empty!");
+
+        RecordData recordData = new RecordData(reponses.get(0));
+
+        // Todo: Get the URL
+        requireOriginData(recordData, "url");
+
+        return recordData;
+    }
+
+    private String requireOriginData(RecordData recordData, String url) throws Exception{
+        StringBuilder builder = new StringBuilder();
+        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+
+            HttpPost request = new HttpPost(url);
+            request.setHeader("User-Agent", "Java client");
+
+            List<NameValuePair> params = new ArrayList<>();
+            params.add(new BasicNameValuePair("applicant", recordData.getApplicant()));
+            params.add(new BasicNameValuePair("uploader", recordData.getUploader()));
+            params.add(new BasicNameValuePair("recordId", recordData.getId().toString(10)));
+            params.add(new BasicNameValuePair("creditDataId", recordData.getCreditDataId().toString(10)));
+            params.add(new BasicNameValuePair("time", recordData.getTime().toString(10)));
+            request.setEntity(new UrlEncodedFormEntity(params));
+
+            HttpResponse response = client.execute(request);
+
+            BufferedReader bufReader = new BufferedReader(new InputStreamReader(
+                    response.getEntity().getContent()));
+
+            String line;
+
+            while ((line = bufReader.readLine()) != null) {
+                builder.append(line);
+                builder.append(System.lineSeparator());
+            }
+
+            System.out.println(builder);
+        }
+        return builder.toString();
+    }
+
+    /**
+     * Stores the required record data
+     * @param applicant
+     * @param uploader
+     * @param recordId
+     * @param creditDataId
+     * @param time
+     * @return
+     */
+    @PostMapping(value = "/requireOrigin")
+    public String requireRecordData(@RequestParam("applicant") String applicant,
+                                    @RequestParam("uploader") String uploader,
+                                    @RequestParam("recordId") BigInteger recordId,
+                                    @RequestParam("creditDataId") BigInteger creditDataId,
+                                    @RequestParam("time") BigInteger time) {
+        JSONObject jsonObject = new JSONObject();
+
+        boolean isSuccess = false;
+
+        try {
+            RequiredRecord requiredRecord = new RequiredRecord();
+            requiredRecord.setRecordid(recordId);
+            requiredRecord.setApplicant(applicant);
+            requiredRecord.setUploader(uploader);
+            requiredRecord.setCreditDataId(creditDataId);
+            requiredRecord.setTime(time);
+
+            requiredRecordRepository.save(requiredRecord);
+
+            isSuccess = true;
+        } catch (Exception e) {
+            jsonObject.put("error", e.toString());
+        } finally {
+            jsonObject.put("isSuccess", isSuccess);
+        }
+        return jsonObject.toJSONString();
     }
 
     /**
@@ -62,7 +159,8 @@ public class RecordController {
     String checkRecord (@RequestParam("applicant") String applicant,
                          @RequestParam("uploader") String uploader,
                          @RequestParam("recordId") BigInteger recordId,
-                         @RequestParam("creditDataId") BigInteger creditDataId
+                         @RequestParam("creditDataId") BigInteger creditDataId,
+                        @RequestParam("time") BigInteger time
     ) throws Exception {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("isSuccess", record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get());
@@ -81,21 +179,74 @@ public class RecordController {
             @RequestParam("recordId") BigInteger recordId,
             @RequestParam("isSend") Boolean isSend
     ) throws Exception {
+        JSONObject jsonObject = new JSONObject();
+        boolean isSuccess = false;
+
         TransactionReceipt receipt = record.sendRecordData(recordId, isSend).sendAsync().get();
         if (!receipt.isStatusOK()) {
             System.out.println(receipt.getLogs().toString());
             throw new Exception("/ifSend Status not OK: " + receipt.getLogs().toString());
         }
         List<Record.SendRecordDataSuccessEventResponse> responses = record.getSendRecordDataSuccessEvents(receipt);
-
-        JSONObject jsonObject = new JSONObject();
         if (responses.isEmpty()) {
             throw new Exception("response empty!");
-        } else {
-            jsonObject.put("isSuccess", responses.get(0).yn);
         }
+
+        String response;
+        try {
+            OriginCredit originCredit =creditRepository.findById(recordId).get();
+
+            // Todo: get URL
+            response = sendOriginData(originCredit, "");
+
+            isSuccess = true;
+        } catch (Exception e) {
+            response = e.toString();
+        }
+//        JSONObject jsonResponse = new JSONObject(response);
+
+        jsonObject.put("isSuccess", responses.get(0).yn && isSuccess);
+        jsonObject.put("response", response);
+
+        // Update the database
+        RequiredRecord requiredRecord = requiredRecordRepository.findById(recordId).get();
+        requiredRecord.setSent(isSend);
+        requiredRecordRepository.save(requiredRecord);
+
         return jsonObject.toJSONString();
 
+    }
+
+    private String sendOriginData(OriginCredit originCredit, String url) throws Exception{
+        StringBuilder builder = new StringBuilder();
+        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+
+            HttpPost request = new HttpPost(url + "/credit/send");
+            request.setHeader("User-Agent", "Java client");
+
+            List<NameValuePair> params = new ArrayList<>();
+            params.add(new BasicNameValuePair("id", originCredit.getCreditId().toString(10)));
+            params.add(new BasicNameValuePair("dataOrigin", originCredit.getDataOrigin()));
+            params.add(new BasicNameValuePair("dataHash", originCredit.getDataHash()));
+            params.add(new BasicNameValuePair("type", originCredit.getType().toString(10)));
+
+            request.setEntity(new UrlEncodedFormEntity(params));
+
+            HttpResponse response = client.execute(request);
+
+            BufferedReader bufReader = new BufferedReader(new InputStreamReader(
+                    response.getEntity().getContent()));
+
+            String line;
+
+            while ((line = bufReader.readLine()) != null) {
+                builder.append(line);
+                builder.append(System.lineSeparator());
+            }
+
+            System.out.println(builder);
+        }
+        return builder.toString();
     }
 
     @PostMapping(value = "/get")

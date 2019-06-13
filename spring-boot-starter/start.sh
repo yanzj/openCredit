@@ -1,6 +1,6 @@
 #!/bin/sh
 
-APP_MAIN=org.fisco.bcos.Application
+APP_MAIN=apps/openCredit.jar
 CLASSPATH='conf/:apps/*:lib/*'
 CURRENT_DIR=`pwd`
 LOG_DIR=${CURRENT_DIR}/log
@@ -24,10 +24,12 @@ start(){
 	echo "==============================================================================================="
 	if [ $tradePortalPID -ne 0 ]; then
 	    echo "$APP_MAIN is already started(PID=$tradePortalPID)"
+	    kill -9 $tradePortalPID
+	    start
 	    echo "==============================================================================================="
 	else
 	    echo -n "Starting $APP_MAIN "
-	    nohup $JAVA_HOME/bin/java -cp $CLASSPATH $APP_MAIN >> $LOG_DIR/browser.out 2>&1 &
+	    nohup $JAVA_HOME/bin/java -cp $CLASSPATH -jar $APP_MAIN >> $LOG_DIR/browser.out 2>&1 &
 	    sleep 5
 	    getTradeProtalPID
 	    if [ $tradePortalPID -ne 0 ]; then

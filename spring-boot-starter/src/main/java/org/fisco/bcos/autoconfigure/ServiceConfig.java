@@ -15,7 +15,7 @@ public class ServiceConfig {
 
     private String orgID;
     private Integer connectSeconds = 30;
-    private Integer connectSleepPerMillis = 1;
+    private Integer connectSleepPerMillis = 10;
     private GroupChannelConnectionsConfig allChannelConnections;
     private static int groupId = 1;
 

@@ -13,3 +13,6 @@ channel-service:
 spring:
   application:
     name: openCredit
+
+server:
+  port: 8081

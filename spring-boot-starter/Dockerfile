@@ -1,2 +1,3 @@
-FROM openjdk:8-jdk-alpine
+FROM gradle:5.4-jdk8-alpine
+USER root
 WORKDIR /app/dist
