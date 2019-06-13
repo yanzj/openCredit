@@ -1,4 +1,4 @@
-Docker-compose up -d
+docker-compose up -d
 ./gradlew clean
 ./gradlew build
 cd dist
