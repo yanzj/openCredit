@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-@CrossOrigin(origins = "http://localhost:8080")
+@CrossOrigin(origins = "http://localhost:8081")
 @RestController
 @RequestMapping(value = "/credit")
 public class CreditController {
@@ -129,6 +129,10 @@ public class CreditController {
         return  jsonObject.toJSONString();
     }
 
+    /**
+     * 可评分列表
+     * @return
+     */
     @PostMapping(value = "/scoreList")
     public Iterable<RequiredRecord> scoreList() {
 

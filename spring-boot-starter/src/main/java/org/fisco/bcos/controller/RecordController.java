@@ -2,6 +2,7 @@ package org.fisco.bcos.controller;
 
 
 import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -28,7 +29,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:8080")
+@Slf4j
+@CrossOrigin(origins = "http://localhost:8081")
 @RestController
 @RequestMapping(value = "/record")
 public class RecordController {
@@ -81,7 +83,10 @@ public class RecordController {
         requireRecordRepository.save(requiredRecord);
 
         // Todo: Get the URL
-        requireOriginData(recordData, "url");
+        String resultStr = requireOriginData(recordData, "http://localhost:8081/record/requireOrigin");
+
+        System.out.println("/add" + resultStr);
+        log.info("/add: " + resultStr);
 
         return recordData;
     }
@@ -144,12 +149,19 @@ public class RecordController {
             requiredRecord.setUploader(uploader);
             requiredRecord.setCreditDataId(creditDataId);
             requiredRecord.setTime(time);
+            requiredRecord.setCheckResult(record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get());
+
+            OriginCredit credit = creditRepository.findById(creditDataId).get();
+            requiredRecord.setDataOrigin(credit.getDataOrigin());
+            requiredRecord.setDataHash(credit.getDataHash());
+            requiredRecord.setType(credit.getType());
 
             requiredRecordRepository.save(requiredRecord);
 
             isSuccess = true;
         } catch (Exception e) {
             jsonObject.put("error", e.toString());
+            log.error("");
         } finally {
             jsonObject.put("isSuccess", isSuccess);
         }
@@ -208,7 +220,7 @@ public class RecordController {
             OriginCredit originCredit =creditRepository.findById(recordId).get();
 
             // Todo: get URL
-            response = sendOriginData(originCredit, "");
+            response = sendOriginData(originCredit, "http://localhost:8080"); // 请求者的 ip
 
             isSuccess = true;
         } catch (Exception e) {
@@ -260,6 +272,12 @@ public class RecordController {
         return builder.toString();
     }
 
+    /**
+     * Get Record Data by id from block chain
+     * @param recordId
+     * @return
+     * @throws Exception
+     */
     @PostMapping(value = "/get")
     public @ResponseBody
     RecordData getRecordDataById(@RequestParam("recordId") BigInteger recordId) throws Exception {
@@ -287,5 +305,30 @@ public class RecordController {
             jsonObject.put("isSuccess", responses.get(0).yn);
         }
         return jsonObject.toJSONString();
+    }
+
+    /**
+     * 可发送列表
+     * @return
+     */
+    @PostMapping(value = "/sendList")
+    public Iterable<RequiredRecord> sendList() {
+
+        JSONObject jsonObject = new JSONObject();
+        boolean isSuccess = false;
+        Iterable<RequiredRecord> list = requiredRecordRepository.findByCheckResult(true);
+//        try {
+//
+//            list =
+//
+//
+//
+//            isSuccess = true;
+//        } catch (Exception e) {
+//            jsonObject.put("error", e.toString());
+//        }
+//        jsonObject.put("isSuccess", isSuccess);
+
+        return  list;
     }
 }
