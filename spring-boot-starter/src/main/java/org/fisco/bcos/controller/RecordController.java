@@ -308,22 +308,38 @@ public class RecordController {
         return new RecordData(tupleResult);
     }
 
+    /**
+     * 评分
+     * @param recordId
+     * @param score
+     * @return
+     * @throws Exception
+     */
     @PostMapping(value = "/score")
     public @ResponseBody
     String scoreRecordData( @RequestParam("recordId") BigInteger recordId,
                              @RequestParam("score") BigInteger score) throws Exception {
+        JSONObject jsonObject = new JSONObject();
+        Boolean isSuccess = false;
+        String resultStr = "";
+
         TransactionReceipt receipt = record.scoreRecordData(recordId, score).sendAsync().get();
         if (!receipt.isStatusOK()) {
-            System.out.println(receipt.getLogs().toString());
-            throw new Exception("/score Status not OK: " + receipt.getLogs().toString());
+            log.error("/record/score Status not OK: {}", receipt.getLogs().toString());
+            resultStr = "/score Status not OK: " + receipt.getLogs().toString();
         }
         List<Record.SendRecordDataSuccessEventResponse> responses = record.getSendRecordDataSuccessEvents(receipt);
-        JSONObject jsonObject = new JSONObject();
+
         if (responses.isEmpty()) {
-            throw new Exception("response empty!");
+            log.error("/record/score responses isEmpty()");
+            resultStr += "response empty!";
         } else {
-            jsonObject.put("isSuccess", responses.get(0).yn);
+            isSuccess = true;
         }
+
+        jsonObject.put("isSuccess", responses.get(0).yn && isSuccess);
+        jsonObject.put("error", resultStr);
+
         return jsonObject.toJSONString();
     }
 
@@ -347,5 +363,18 @@ public class RecordController {
     @GetMapping(value = "/requiredList")
     public Iterable<RequiredRecord> getRequiredRecordList() {
         return requireRecordRepository.findAll();
+    }
+
+
+    /**
+     * Get
+     * 可评分列表
+     * @return
+     */
+    @GetMapping(value = "/scoreList")
+    public Iterable<RequiredRecord> scoreList() {
+        // 已收到未评分
+        Iterable<RequiredRecord> list = requireRecordRepository.findByIsSentAAndIsScored(true, false);
+        return  list;
     }
 }

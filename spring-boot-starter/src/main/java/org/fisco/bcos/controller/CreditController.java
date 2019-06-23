@@ -144,13 +144,4 @@ public class CreditController {
         return  jsonObject.toJSONString();
     }
 
-    /**
-     * 可评分列表
-     * @return
-     */
-    @PostMapping(value = "/scoreList")
-    public Iterable<RequiredRecord> scoreList() {
-        Iterable<RequiredRecord> list = requireRecordRepository.findByIsSent(true);
-        return  list;
-    }
 }

@@ -16,8 +16,6 @@ public class SavedCredit {
 
     private BigInteger type;
 
-    private Boolean isScored;
-
     public BigInteger getCreditId() {
         return creditId;
     }
