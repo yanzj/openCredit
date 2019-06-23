@@ -374,7 +374,7 @@ public class RecordController {
     @GetMapping(value = "/scoreList")
     public Iterable<RequiredRecord> scoreList() {
         // 已收到未评分
-        Iterable<RequiredRecord> list = requireRecordRepository.findByIsSentAAndIsScored(true, false);
+        Iterable<RequiredRecord> list = requireRecordRepository.findByIsSentAndIsScored(true, false);
         return  list;
     }
 }

@@ -12,5 +12,5 @@ import java.math.BigInteger;
 public interface RequireRecordRepository extends CrudRepository<RequiredRecord, BigInteger> {
     Iterable<RequiredRecord> findByIsSent(Boolean isSent);
     RequiredRecord findByCreditId(BigInteger creditId);
-    Iterable<RequiredRecord> findByIsSentAAndIsScored(Boolean sent, Boolean scored);
+    Iterable<RequiredRecord> findByIsSentAndIsScored(Boolean isSent, Boolean IsScored);
 }
