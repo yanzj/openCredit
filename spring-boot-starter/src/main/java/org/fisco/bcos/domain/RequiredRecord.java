@@ -33,6 +33,16 @@ public class RequiredRecord {
 
     private BigInteger type;
 
+    public BigInteger getToken() {
+        return token;
+    }
+
+    public void setToken(BigInteger token) {
+        this.token = token;
+    }
+
+    private BigInteger token;   // for sending original data
+
     public RequiredRecord() {
     }
 

@@ -98,11 +98,21 @@ public class CreditController {
         return credits;
     }
 
+    /**
+     * 接收其他机构传送的原始资料
+     * @param id
+     * @param dataOrigin
+     * @param dataHash
+     * @param type
+     * @param token
+     * @return
+     */
     @PostMapping(value = "/send")
     public String send(@RequestParam("id") BigInteger id,
                        @RequestParam("dataOrigin") String dataOrigin,
                        @RequestParam("dataHash") String dataHash,
-                       @RequestParam("type") BigInteger type) {
+                       @RequestParam("type") BigInteger type,
+                       @RequestParam("token") BigInteger token) {
 
         JSONObject jsonObject = new JSONObject();
         boolean isSuccess = false;
@@ -112,12 +122,18 @@ public class CreditController {
             sv.setDataOrigin(dataOrigin);
             sv.setDataHash(dataHash);
             sv.setType(type);
-            savedCreditRepository.save(sv);
+
             RequiredRecord rr = requireRecordRepository.findByCreditId(sv.getCreditId());
+            if (! rr.getToken().equals(token)) {
+                throw new Exception("token is not correct");
+            }
+
             rr.setSent(true);
             rr.setDataOrigin(sv.getDataOrigin());
             rr.setDataHash(sv.getDataHash());
             rr.setType(type);
+            requireRecordRepository.save(rr);
+            savedCreditRepository.save(sv);
 
             isSuccess = true;
         } catch (Exception e) {
@@ -134,22 +150,7 @@ public class CreditController {
      */
     @PostMapping(value = "/scoreList")
     public Iterable<RequiredRecord> scoreList() {
-
-        JSONObject jsonObject = new JSONObject();
-        boolean isSuccess = false;
         Iterable<RequiredRecord> list = requireRecordRepository.findByIsSent(true);
-//        try {
-//
-//            list =
-//
-//
-//
-//            isSuccess = true;
-//        } catch (Exception e) {
-//            jsonObject.put("error", e.toString());
-//        }
-//        jsonObject.put("isSuccess", isSuccess);
-
         return  list;
     }
 }

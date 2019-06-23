@@ -91,15 +91,13 @@ public class RecordController {
 
         // Todo: Get the URL
         String resultStr = requireOriginData(requiredRecord, "http://localhost:8081");
+        log.info("/record/add Http requireOriginData, result = {}", resultStr);
 
         JSONObject response = JSONObject.parseObject(resultStr);
 
         if (response.getBoolean("isSuccess")) {
             isSuccess = true;
         }
-
-        System.out.println("/add" + resultStr);
-        log.info("/add: " + resultStr);
 
         returnValue.put("isSuccess", isSuccess);
         returnValue.put("RequiredRecord", requiredRecord);
@@ -127,6 +125,7 @@ public class RecordController {
             params.add(new BasicNameValuePair("recordId", requiredRecord.getRecordId().toString(10)));
             params.add(new BasicNameValuePair("creditDataId", requiredRecord.getCreditId().toString(10)));
             params.add(new BasicNameValuePair("time", requiredRecord.getTime().toString(10)));
+            params.add(new BasicNameValuePair("token", requiredRecord.getToken().toString(10)));
             request.setEntity(new UrlEncodedFormEntity(params));
 
             HttpResponse response = client.execute(request);
@@ -140,8 +139,6 @@ public class RecordController {
                 builder.append(line);
                 builder.append(System.lineSeparator());
             }
-
-            System.out.println(builder);
         }
         return builder.toString();
     }
@@ -160,7 +157,8 @@ public class RecordController {
                                     @RequestParam("uploader") String uploader,
                                     @RequestParam("recordId") BigInteger recordId,
                                     @RequestParam("creditDataId") BigInteger creditDataId,
-                                    @RequestParam("time") BigInteger time) {
+                                    @RequestParam("time") BigInteger time,
+                                    @RequestParam("token") BigInteger token) {
         JSONObject jsonObject = new JSONObject();
 
         boolean isSuccess = false;
@@ -174,6 +172,7 @@ public class RecordController {
             sendRecord.setTime(time);
             sendRecord.setCheckResult(record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get());
             sendRecord.setChecked(true);
+            sendRecord.setToken(token);
 
             sendRecordRepository.save(sendRecord);
 
@@ -235,20 +234,30 @@ public class RecordController {
             throw new Exception("response empty!");
         }
 
-        String response;
+        String responseStr;
         try {
-            OriginCredit originCredit = originCreditRepository.findById(recordId).get();
+            SendRecord sendRecord = sendRecordRepository.findById(recordId).get();
+            OriginCredit originCredit = originCreditRepository.findById(sendRecord.getCreditId()).get();
 
             // Todo: get URL
-            response = sendOriginData(originCredit, "http://localhost:8080"); // 请求者的 ip
+            responseStr = sendOriginData(originCredit, "http://localhost:8080", sendRecord.getToken()); // 请求者的 ip
 
-            isSuccess = true;
+            log.info("/record//ifSend Http sendOriginData, result = {}", responseStr);
+
+            JSONObject response = JSONObject.parseObject(responseStr);
+
+            if (response.getBoolean("isSuccess")) {
+                isSuccess = true;
+            } else {
+                throw new Exception(response.getString("error"));
+            }
+
         } catch (Exception e) {
-            response = e.toString();
+            responseStr = e.toString();
         }
 
         jsonObject.put("isSuccess", responses.get(0).yn && isSuccess);
-        jsonObject.put("response", response);
+        jsonObject.put("response", responseStr);
 
         // Update the database
         SendRecord requiredRecord = sendRecordRepository.findById(recordId).get();
@@ -259,7 +268,7 @@ public class RecordController {
 
     }
 
-    private String sendOriginData(OriginCredit originCredit, String url) throws Exception{
+    private String sendOriginData(OriginCredit originCredit, String url, BigInteger token) throws Exception{
         StringBuilder builder = new StringBuilder();
         try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
 
@@ -271,6 +280,7 @@ public class RecordController {
             params.add(new BasicNameValuePair("dataOrigin", originCredit.getDataOrigin()));
             params.add(new BasicNameValuePair("dataHash", originCredit.getDataHash()));
             params.add(new BasicNameValuePair("type", originCredit.getType().toString(10)));
+            params.add(new BasicNameValuePair("token", token.toString(10)));
 
             request.setEntity(new UrlEncodedFormEntity(params));
 
@@ -285,8 +295,6 @@ public class RecordController {
                 builder.append(line);
                 builder.append(System.lineSeparator());
             }
-
-            System.out.println(builder);
         }
         return builder.toString();
     }
