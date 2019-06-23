@@ -44,6 +44,7 @@ public class ContractConfig {
         Credit credit = null;
         List<CnsInfo> cnsInfoList = cnsService.queryCnsByName(CREDIT_CONTRACT);
         if (cnsInfoList.isEmpty()) {
+            log.info("Contract Credit not found, register");
             // register
             try {
                 credit = Credit.deploy(web3j, credentials, new StaticGasProvider(gasPrice, gasLimit)).send();
@@ -58,8 +59,7 @@ public class ContractConfig {
             credit = Credit.load(addr, web3j, credentials, new StaticGasProvider(gasPrice, gasLimit));
         }
 
-        if (null == credit)
-            throw new Exception("credit is null");
+        log.info("Contract Credit address = {}", credit.getContractAddress());
 
         return credit;
     }
@@ -69,6 +69,7 @@ public class ContractConfig {
         Record record;
         List<CnsInfo> cnsInfoList = cnsService.queryCnsByName(RECORD_CONTRACT);
         if (cnsInfoList.isEmpty()) {
+            log.info("Contract Record not found, register");
             // register
             try {
                 record = Record.deploy(web3j, credentials, new StaticGasProvider(gasPrice, gasLimit)).send();
@@ -77,11 +78,13 @@ public class ContractConfig {
                 log.error("Error: getCredit: " + e.toString());
                 throw e;
             }
-            cnsService.registerCns(CREDIT_CONTRACT, CREDIT_CONTRACT_VERSION, record.getContractAddress(), record.getContractBinary());
+            cnsService.registerCns(RECORD_CONTRACT, RECORD_CONTRACT_VERSION, record.getContractAddress(), record.getContractBinary());
         } else {
             String addr = cnsInfoList.get(0).getAddress();
             record = Record.load(addr, web3j, credentials, new StaticGasProvider(gasPrice, gasLimit));
         }
+        log.info("Contract Record address = {}", record.getContractAddress());
+
         return record;
     }
 }
