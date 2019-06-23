@@ -123,7 +123,7 @@ public class RecordController {
             params.add(new BasicNameValuePair("applicant", requiredRecord.getApplicant()));
             params.add(new BasicNameValuePair("uploader", requiredRecord.getUploader()));
             params.add(new BasicNameValuePair("recordId", requiredRecord.getRecordId().toString(10)));
-            params.add(new BasicNameValuePair("creditDataId", requiredRecord.getCreditId().toString(10)));
+            params.add(new BasicNameValuePair("creditId", requiredRecord.getCreditId().toString(10)));
             params.add(new BasicNameValuePair("time", requiredRecord.getTime().toString(10)));
             params.add(new BasicNameValuePair("token", requiredRecord.getToken().toString(10)));
             request.setEntity(new UrlEncodedFormEntity(params));
@@ -148,7 +148,7 @@ public class RecordController {
      * @param applicant
      * @param uploader
      * @param recordId
-     * @param creditDataId
+     * @param creditId
      * @param time
      * @return
      */
@@ -156,7 +156,7 @@ public class RecordController {
     public String requireRecordData(@RequestParam("applicant") String applicant,
                                     @RequestParam("uploader") String uploader,
                                     @RequestParam("recordId") BigInteger recordId,
-                                    @RequestParam("creditDataId") BigInteger creditDataId,
+                                    @RequestParam("creditId") BigInteger creditId,
                                     @RequestParam("time") BigInteger time,
                                     @RequestParam("token") BigInteger token) {
         JSONObject jsonObject = new JSONObject();
@@ -164,15 +164,10 @@ public class RecordController {
         boolean isSuccess = false;
 
         try {
-            SendRecord sendRecord = new SendRecord();
-            sendRecord.setRecordId(recordId);
-            sendRecord.setApplicant(applicant);
-            sendRecord.setUploader(uploader);
-            sendRecord.setCreditId(creditDataId);
-            sendRecord.setTime(time);
-            sendRecord.setCheckResult(record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get());
-            sendRecord.setChecked(true);
-            sendRecord.setToken(token);
+            boolean isExist = record.checkRecordExist(applicant, uploader, recordId, creditId).sendAsync().get();
+            log.info("/record/requireOrigin isExist = {}", isExist);
+
+            SendRecord sendRecord = new SendRecord(recordId, applicant, uploader, time, isExist, creditId, token);
 
             sendRecordRepository.save(sendRecord);
 
@@ -248,6 +243,10 @@ public class RecordController {
 
             if (response.getBoolean("isSuccess")) {
                 isSuccess = true;
+
+                // Update the database
+                sendRecord.setSent(true);
+                sendRecordRepository.save(sendRecord);
             } else {
                 throw new Exception(response.getString("error"));
             }
@@ -259,13 +258,7 @@ public class RecordController {
         jsonObject.put("isSuccess", responses.get(0).yn && isSuccess);
         jsonObject.put("response", responseStr);
 
-        // Update the database
-        SendRecord requiredRecord = sendRecordRepository.findById(recordId).get();
-        requiredRecord.setSent(isSend);
-        sendRecordRepository.save(requiredRecord);
-
         return jsonObject.toJSONString();
-
     }
 
     private String sendOriginData(OriginCredit originCredit, String url, BigInteger token) throws Exception{
