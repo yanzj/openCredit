@@ -1,6 +1,10 @@
 package org.fisco.bcos.domain;
 
 
+import org.fisco.bcos.service.OriginCreditRepository;
+import org.fisco.bcos.solidity.Record;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.math.BigInteger;
@@ -13,11 +17,7 @@ public class RequiredRecord {
 
     private String applicant;    // the organize want the data
     private String uploader;     // the organize upload the data
-    private BigInteger creditDataId; // the id of credit data
     private BigInteger time;
-
-    private Boolean isChecked;
-    private Boolean checkResult;  // If the record in the block chain
 
     private Boolean isSent;       // whether the original data has been sent from the uploader
 
@@ -25,13 +25,27 @@ public class RequiredRecord {
 
     private BigInteger score;       // the score of this record
 
-    private BigInteger creditId;
+    private BigInteger creditId;   // the id of credit data
 
     private String dataOrigin;
 
     private String dataHash;
 
     private BigInteger type;
+
+    public RequiredRecord() {
+    }
+
+    public RequiredRecord(Record.AddRecordSuccessEventResponse response) {
+        recordId = response._id;
+        applicant = response._applicant;
+        uploader = response._uploader;
+        creditId = response._creditDataId;
+        time = response._time;
+
+        isSent = false;
+        isScored = false;
+    }
 
     public BigInteger getCreditId() {
         return creditId;
@@ -89,36 +103,12 @@ public class RequiredRecord {
         this.uploader = uploader;
     }
 
-    public BigInteger getCreditDataId() {
-        return creditDataId;
-    }
-
-    public void setCreditDataId(BigInteger creditDataId) {
-        this.creditDataId = creditDataId;
-    }
-
     public BigInteger getTime() {
         return time;
     }
 
     public void setTime(BigInteger time) {
         this.time = time;
-    }
-
-    public Boolean getChecked() {
-        return isChecked;
-    }
-
-    public void setChecked(Boolean checked) {
-        isChecked = checked;
-    }
-
-    public Boolean getCheckResult() {
-        return checkResult;
-    }
-
-    public void setCheckResult(Boolean checkResult) {
-        this.checkResult = checkResult;
     }
 
     public Boolean getSent() {

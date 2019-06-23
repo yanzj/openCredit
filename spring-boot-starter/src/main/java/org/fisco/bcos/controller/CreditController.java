@@ -6,11 +6,10 @@ import org.fisco.bcos.bean.CreditData;
 import org.fisco.bcos.domain.OriginCredit;
 import org.fisco.bcos.domain.RequiredRecord;
 import org.fisco.bcos.domain.SavedCredit;
-import org.fisco.bcos.service.CreditRepository;
+import org.fisco.bcos.service.OriginCreditRepository;
 import org.fisco.bcos.service.RequireRecordRepository;
 import org.fisco.bcos.service.SavedCreditRepository;
 import org.fisco.bcos.solidity.Credit;
-import org.fisco.bcos.utils.SolidityTools;
 import org.fisco.bcos.web3j.crypto.Hash;
 import org.fisco.bcos.web3j.protocol.Web3j;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -36,7 +35,7 @@ public class CreditController {
     Credit credit;
 
     @Autowired
-    CreditRepository creditRepository;
+    OriginCreditRepository originCreditRepository;
 
     @Autowired
     SavedCreditRepository savedCreditRepository;
@@ -69,7 +68,7 @@ public class CreditController {
         originCredit.setDataHash(Hash.sha3String(data));
         originCredit.setType(type);
 
-        creditRepository.save(originCredit);
+        originCreditRepository.save(originCredit);
 
         log.info("return: "  + jsonObject.toJSONString());
         return jsonObject.toJSONString();
@@ -114,7 +113,7 @@ public class CreditController {
             sv.setDataHash(dataHash);
             sv.setType(type);
             savedCreditRepository.save(sv);
-            RequiredRecord rr = requireRecordRepository.findByCreditDataId(sv.getCreditId());
+            RequiredRecord rr = requireRecordRepository.findByCreditId(sv.getCreditId());
             rr.setSent(true);
             rr.setDataOrigin(sv.getDataOrigin());
             rr.setDataHash(sv.getDataHash());

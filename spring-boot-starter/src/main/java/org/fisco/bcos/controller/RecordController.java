@@ -13,9 +13,10 @@ import org.apache.http.message.BasicNameValuePair;
 import org.fisco.bcos.bean.RecordData;
 import org.fisco.bcos.domain.OriginCredit;
 import org.fisco.bcos.domain.RequiredRecord;
-import org.fisco.bcos.service.CreditRepository;
+import org.fisco.bcos.domain.SendRecord;
+import org.fisco.bcos.service.OriginCreditRepository;
 import org.fisco.bcos.service.RequireRecordRepository;
-import org.fisco.bcos.service.RequiredRecordRepository;
+import org.fisco.bcos.service.SendRecordRepository;
 import org.fisco.bcos.solidity.Record;
 import org.fisco.bcos.web3j.protocol.Web3j;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -42,10 +43,10 @@ public class RecordController {
     Record record;
 
     @Autowired
-    CreditRepository creditRepository;
+    OriginCreditRepository originCreditRepository;
 
     @Autowired
-    RequiredRecordRepository requiredRecordRepository; // 对方
+    SendRecordRepository sendRecordRepository; // 对方
 
     @Autowired
     RequireRecordRepository requireRecordRepository; // 本地
@@ -59,51 +60,73 @@ public class RecordController {
      */
     @PostMapping(value = "/add")
     public @ResponseBody
-    RecordData addRecord(@RequestParam("creditDataId") BigInteger creditDataId,
+    String addRecord(@RequestParam("creditDataId") BigInteger creditDataId,
                          @RequestParam("uploader") String uploader) throws Exception {
+        boolean isSuccess = false;
+        JSONObject returnValue = new JSONObject();
+
+        // Add record data in block chain
         TransactionReceipt result = record.addRecordData(creditDataId, uploader).sendAsync().get();
+
         if (!result.isStatusOK()) {
-            System.out.println(result.getLogs().toString());
-            throw new Exception("Status not OK: " + result.getLogs().toString());
+            log.error(result.getLogs().toString());
+            returnValue.put("isSuccess", false);
+            returnValue.put("error", result.getLogs().toString());
+            return returnValue.toJSONString();
         }
-        List<Record.AddRecordSuccessEventResponse> reponses = record.getAddRecordSuccessEvents(result);
 
-        if (reponses.isEmpty())
-            throw new Exception("No success! Response is empty!");
+        // get the response from block chain
+        List<Record.AddRecordSuccessEventResponse> responses = record.getAddRecordSuccessEvents(result);
 
-        RecordData recordData = new RecordData(reponses.get(0));
+        if (responses.isEmpty()) {
+            log.error("No success! Response is empty!");
+            returnValue.put("isSuccess", false);
+            returnValue.put("error", "No success! Response is empty!");
+            return returnValue.toJSONString();
+        }
 
-        RequiredRecord requiredRecord = new RequiredRecord();
-        requiredRecord.setRecordId(recordData.getId());
-        requiredRecord.setApplicant(recordData.getApplicant());
-        requiredRecord.setUploader(uploader);
-        requiredRecord.setCreditDataId(creditDataId);
-        requiredRecord.setTime(recordData.getTime());
-
+        // Save the record in the database
+        RequiredRecord requiredRecord = new RequiredRecord(responses.get(0));
         requireRecordRepository.save(requiredRecord);
 
         // Todo: Get the URL
-        String resultStr = requireOriginData(recordData, "http://localhost:8081/record/requireOrigin");
+        String resultStr = requireOriginData(requiredRecord, "http://localhost:8081");
+
+        JSONObject response = JSONObject.parseObject(resultStr);
+
+        if (response.getBoolean("isSuccess")) {
+            isSuccess = true;
+        }
 
         System.out.println("/add" + resultStr);
         log.info("/add: " + resultStr);
 
-        return recordData;
+        returnValue.put("isSuccess", isSuccess);
+        returnValue.put("RequiredRecord", requiredRecord);
+
+        return returnValue.toJSONString();
     }
 
-    private String requireOriginData(RecordData recordData, String url) throws Exception{
+    /**
+     * Start a HTTP request for requiring original data
+     * @param requiredRecord
+     * @param url
+     * @return The HTTP response
+     * @throws Exception
+     */
+    private String requireOriginData(RequiredRecord requiredRecord, String url) throws Exception{
         StringBuilder builder = new StringBuilder();
         try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
 
-            HttpPost request = new HttpPost(url);
+            HttpPost request = new HttpPost(url + "/record/requireOrigin");
             request.setHeader("User-Agent", "Java client");
 
             List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("applicant", recordData.getApplicant()));
-            params.add(new BasicNameValuePair("uploader", recordData.getUploader()));
-            params.add(new BasicNameValuePair("recordId", recordData.getId().toString(10)));
-            params.add(new BasicNameValuePair("creditDataId", recordData.getCreditDataId().toString(10)));
-            params.add(new BasicNameValuePair("time", recordData.getTime().toString(10)));
+            params.add(new BasicNameValuePair("applicant", requiredRecord.getApplicant()));
+            params.add(new BasicNameValuePair("uploader", requiredRecord.getUploader()));
+            params.add(new BasicNameValuePair("recordId", requiredRecord.getRecordId().toString(10)));
+            params.add(new BasicNameValuePair("creditDataId", requiredRecord.getCreditId().toString(10)));
+            params.add(new BasicNameValuePair("time", requiredRecord.getTime().toString(10)));
             request.setEntity(new UrlEncodedFormEntity(params));
 
             HttpResponse response = client.execute(request);
@@ -143,25 +166,21 @@ public class RecordController {
         boolean isSuccess = false;
 
         try {
-            RequiredRecord requiredRecord = new RequiredRecord();
-            requiredRecord.setRecordId(recordId);
-            requiredRecord.setApplicant(applicant);
-            requiredRecord.setUploader(uploader);
-            requiredRecord.setCreditDataId(creditDataId);
-            requiredRecord.setTime(time);
-            requiredRecord.setCheckResult(record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get());
+            SendRecord sendRecord = new SendRecord();
+            sendRecord.setRecordId(recordId);
+            sendRecord.setApplicant(applicant);
+            sendRecord.setUploader(uploader);
+            sendRecord.setCreditId(creditDataId);
+            sendRecord.setTime(time);
+            sendRecord.setCheckResult(record.checkRecordExist(applicant, uploader, recordId, creditDataId).sendAsync().get());
+            sendRecord.setChecked(true);
 
-            OriginCredit credit = creditRepository.findById(creditDataId).get();
-            requiredRecord.setDataOrigin(credit.getDataOrigin());
-            requiredRecord.setDataHash(credit.getDataHash());
-            requiredRecord.setType(credit.getType());
-
-            requiredRecordRepository.save(requiredRecord);
+            sendRecordRepository.save(sendRecord);
 
             isSuccess = true;
         } catch (Exception e) {
             jsonObject.put("error", e.toString());
-            log.error("");
+            log.error(e.toString());
         } finally {
             jsonObject.put("isSuccess", isSuccess);
         }
@@ -169,6 +188,7 @@ public class RecordController {
     }
 
     /**
+     * Not used now
      * Checks if the record is in the block chain
      * @param applicant
      * @param uploader
@@ -217,7 +237,7 @@ public class RecordController {
 
         String response;
         try {
-            OriginCredit originCredit =creditRepository.findById(recordId).get();
+            OriginCredit originCredit = originCreditRepository.findById(recordId).get();
 
             // Todo: get URL
             response = sendOriginData(originCredit, "http://localhost:8080"); // 请求者的 ip
@@ -226,15 +246,14 @@ public class RecordController {
         } catch (Exception e) {
             response = e.toString();
         }
-//        JSONObject jsonResponse = new JSONObject(response);
 
         jsonObject.put("isSuccess", responses.get(0).yn && isSuccess);
         jsonObject.put("response", response);
 
         // Update the database
-        RequiredRecord requiredRecord = requiredRecordRepository.findById(recordId).get();
+        SendRecord requiredRecord = sendRecordRepository.findById(recordId).get();
         requiredRecord.setSent(isSend);
-        requiredRecordRepository.save(requiredRecord);
+        sendRecordRepository.save(requiredRecord);
 
         return jsonObject.toJSONString();
 
@@ -308,27 +327,24 @@ public class RecordController {
     }
 
     /**
+     * Get
      * 可发送列表
      * @return
      */
-    @PostMapping(value = "/sendList")
-    public Iterable<RequiredRecord> sendList() {
-
-        JSONObject jsonObject = new JSONObject();
-        boolean isSuccess = false;
-        Iterable<RequiredRecord> list = requiredRecordRepository.findByCheckResult(true);
-//        try {
-//
-//            list =
-//
-//
-//
-//            isSuccess = true;
-//        } catch (Exception e) {
-//            jsonObject.put("error", e.toString());
-//        }
-//        jsonObject.put("isSuccess", isSuccess);
-
+    @GetMapping(value = "/sendList")
+    public Iterable<SendRecord> sendList() {
+        Iterable<SendRecord> list = sendRecordRepository.findByCheckResult(true);
         return  list;
+    }
+
+
+    /**
+     * Get
+     * 已请求列表
+     * @return
+     */
+    @GetMapping(value = "/requiredList")
+    public Iterable<RequiredRecord> getRequiredRecordList() {
+        return requireRecordRepository.findAll();
     }
 }

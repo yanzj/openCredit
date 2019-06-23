@@ -11,5 +11,5 @@ import java.math.BigInteger;
  */
 public interface RequireRecordRepository extends CrudRepository<RequiredRecord, BigInteger> {
     Iterable<RequiredRecord> findByIsSent(Boolean isSent);
-    RequiredRecord findByCreditDataId(BigInteger creditDataId);
+    RequiredRecord findByCreditId(BigInteger creditId);
 }

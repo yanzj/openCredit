@@ -5,6 +5,6 @@ import org.springframework.data.repository.CrudRepository;
 
 import java.math.BigInteger;
 
-public interface CreditRepository extends CrudRepository<OriginCredit, BigInteger> {
+public interface OriginCreditRepository extends CrudRepository<OriginCredit, BigInteger> {
 
 }
