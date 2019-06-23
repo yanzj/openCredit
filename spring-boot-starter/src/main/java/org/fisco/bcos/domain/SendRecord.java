@@ -28,6 +28,9 @@ public class SendRecord {
 
     private BigInteger creditId;
 
+    public SendRecord() {
+    }
+
     public SendRecord(BigInteger recordId, String applicant, String uploader, BigInteger time, Boolean checkResult, BigInteger creditId, BigInteger token) {
         this.recordId = recordId;
         this.applicant = applicant;

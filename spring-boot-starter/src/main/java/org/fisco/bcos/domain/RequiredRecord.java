@@ -1,6 +1,7 @@
 package org.fisco.bcos.domain;
 
 
+import org.apache.commons.lang.math.RandomUtils;
 import org.fisco.bcos.service.OriginCreditRepository;
 import org.fisco.bcos.solidity.Record;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.math.BigInteger;
+import java.util.Random;
 
 @Entity
 public class RequiredRecord {
@@ -33,6 +35,8 @@ public class RequiredRecord {
 
     private BigInteger type;
 
+    private BigInteger token;   // for sending original data
+
     public BigInteger getToken() {
         return token;
     }
@@ -40,8 +44,6 @@ public class RequiredRecord {
     public void setToken(BigInteger token) {
         this.token = token;
     }
-
-    private BigInteger token;   // for sending original data
 
     public RequiredRecord() {
     }
@@ -55,6 +57,20 @@ public class RequiredRecord {
 
         isSent = false;
         isScored = false;
+
+        // generate random token
+        BigInteger maxLimit = new BigInteger("5000000000000");
+        BigInteger minLimit = new BigInteger("25000000000");
+        BigInteger bigInteger = maxLimit.subtract(minLimit);
+        Random randNum = new Random();
+        int len = maxLimit.bitLength();
+        BigInteger res = new BigInteger(len, randNum);
+        if (res.compareTo(minLimit) < 0)
+            res = res.add(minLimit);
+        if (res.compareTo(bigInteger) >= 0)
+            res = res.mod(bigInteger).add(minLimit);
+
+        token = res;
     }
 
     public BigInteger getCreditId() {

@@ -101,6 +101,7 @@ public class RecordController {
 
         returnValue.put("isSuccess", isSuccess);
         returnValue.put("RequiredRecord", requiredRecord);
+        returnValue.put("responseStr", response.toJSONString());
 
         return returnValue.toJSONString();
     }
@@ -218,15 +219,17 @@ public class RecordController {
     ) throws Exception {
         JSONObject jsonObject = new JSONObject();
         boolean isSuccess = false;
+        JSONObject jsonObjectError = new JSONObject();
 
         TransactionReceipt receipt = record.sendRecordData(recordId, isSend).sendAsync().get();
         if (!receipt.isStatusOK()) {
-            System.out.println(receipt.getLogs().toString());
-            throw new Exception("/ifSend Status not OK: " + receipt.getLogs().toString());
+            log.error("/record/ifSend Status not OK: " + receipt.getLogs().toString());
+            jsonObjectError.put("receiptStatus", receipt.isStatusOK());
         }
         List<Record.SendRecordDataSuccessEventResponse> responses = record.getSendRecordDataSuccessEvents(receipt);
         if (responses.isEmpty()) {
-            throw new Exception("response empty!");
+            log.error("/record/ifSend response empty!");
+            jsonObjectError.put("sizeOfResponseFromContract", responses.size());
         }
 
         String responseStr;
@@ -237,7 +240,7 @@ public class RecordController {
             // Todo: get URL
             responseStr = sendOriginData(originCredit, "http://localhost:8080", sendRecord.getToken()); // 请求者的 ip
 
-            log.info("/record//ifSend Http sendOriginData, result = {}", responseStr);
+            log.info("/record/ifSend Http sendOriginData, result = {}", responseStr);
 
             JSONObject response = JSONObject.parseObject(responseStr);
 
@@ -248,6 +251,7 @@ public class RecordController {
                 sendRecord.setSent(true);
                 sendRecordRepository.save(sendRecord);
             } else {
+                jsonObjectError.put("/credit/sendFail", response);
                 throw new Exception(response.getString("error"));
             }
 
@@ -257,6 +261,9 @@ public class RecordController {
 
         jsonObject.put("isSuccess", responses.get(0).yn && isSuccess);
         jsonObject.put("response", responseStr);
+        if (!jsonObject.getBoolean("isSuccess")) {
+            jsonObject.put("error", jsonObjectError);
+        }
 
         return jsonObject.toJSONString();
     }
