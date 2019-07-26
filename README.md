@@ -1,8 +1,6 @@
 # openCredit
 
-[API Document](./API.md)
+基于 [FISCO-BCOS](https://github.com/FISCO-BCOS/FISCO-BCOS) 区块链平台开发的去中心化征信数据平台。
 
-现在的问题：
-1. ~~Spring boot run 不起来, 原因是 web3j 获取不到~~ \
-   解决方案：
-   装了IDEA的 lombok 插件之后顺利 run 成功
+## [API Document](./API.md)
+
